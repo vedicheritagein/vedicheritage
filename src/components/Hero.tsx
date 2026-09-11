@@ -1,6 +1,6 @@
 
 import heroBg from '../assets/hero_background.webp';
-import artistsImg from '../assets/image 3.webp';
+import artistsImg from '../assets/image.png';
 import logoImg from '../assets/logo.webp';
 import { useBookTickets } from '../lib/booking';
 

@@ -34,6 +34,47 @@ export const CONTACT = {
 } as const;
 
 /**
+ * When and where the event happens.
+ *
+ * The single source of truth for the date. It was previously written out by
+ * hand in the info bar and again in each pre-filled enquiry mail, so a change
+ * of date meant finding every copy; the calendar invite made a third place and
+ * a wrong one there ends up in somebody's phone, where we cannot correct it.
+ *
+ * `date`, `startTime` and `endTime` are wall-clock at the venue and only mean
+ * anything alongside `timeZone` - never convert them to UTC by hand. Doing it
+ * that way keeps the daylight-saving question with Google and the browser,
+ * which know the rules, rather than in a constant here that would be silently
+ * an hour out if the date ever moved past the DST changeover.
+ */
+export const EVENT = {
+  title: 'Annual Dipawali Fundraising Program',
+  organisation: 'Vedic Heritage Inc.',
+
+  date: '2026-10-24',
+  startTime: '17:00',
+  /**
+   * Assumed, not published. The programme says "5:00 PM Sharp (Followed by
+   * Dinner)" and gives no finish, but a calendar entry must end somewhere: an
+   * open-ended block would sit across the rest of the guest's evening. Four
+   * hours covers the programme and dinner. Correct it here when the running
+   * order is fixed and every invite follows.
+   */
+  endTime: '21:00',
+  timeZone: 'America/New_York',
+
+  venue: 'Pandit Jasraj Auditorium',
+  venueLine2: 'Vedic Heritage Inc., Hempstead NY',
+  get address() {
+    return CONTACT.address;
+  },
+
+  /** Display copy, kept beside the machine values so the two cannot drift. */
+  dateLabel: 'Saturday, Oct 24, 2026',
+  timeLabel: '5:00 PM Sharp (Followed by Dinner)',
+} as const;
+
+/**
  * Product identifiers understood by the payments API.
  *
  * These are keys, NOT prices. The server holds the only authoritative price

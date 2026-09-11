@@ -1,4 +1,6 @@
 
+import { EVENT } from '../config/site';
+
 export function InfoBar() {
   return (
     <div className="relative z-30 w-full" style={{ maxWidth: '1320px', margin: '-30px auto 0', padding: '0 20px' }}>
@@ -29,10 +31,10 @@ export function InfoBar() {
               DATE
             </div>
             <div className="text-[#1a1a1a] font-bold leading-tight" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '16px' }}>
-              Saturday, Oct 24, 2026
+              {EVENT.dateLabel}
             </div>
             <div className="text-[#777777] mt-0.5" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '11px' }}>
-              5:00 PM Sharp (Followed by Dinner)
+              {EVENT.timeLabel}
             </div>
           </div>
         </div>
@@ -49,10 +51,10 @@ export function InfoBar() {
               LOCATION
             </div>
             <div className="text-[#1a1a1a] font-bold leading-tight" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '16px' }}>
-              Pandit Jasraj Auditorium
+              {EVENT.venue}
             </div>
             <div className="text-[#777777] mt-0.5" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '11px' }}>
-              Vedic Heritage Inc., Hempstead NY
+              {EVENT.venueLine2}
             </div>
           </div>
         </div>

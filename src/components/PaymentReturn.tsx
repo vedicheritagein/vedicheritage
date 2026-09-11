@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CONTACT } from '../config/site';
 import { fetchOrder, formatMoney, type OrderView } from '../lib/payments';
+import { AddToCalendar } from './AddToCalendar';
 
 export interface PaymentReturnProps {
   orderRef: string;
@@ -174,6 +175,19 @@ export function PaymentReturn({ orderRef, onDismiss }: PaymentReturnProps) {
                   full details.
                 </p>
               )}
+
+              {/*
+                Placed after the money and before the closing note: the guest
+                has just read what they paid and is looking for what happens
+                next, which is the moment the offer is useful. Above the
+                receipt it would compete with the confirmation itself; below
+                the Done button most people would never see it.
+
+                Only on a settled, paid order - there is nothing to diarise
+                for a payment that failed, and a refunded one should not be
+                inviting anybody anywhere.
+              */}
+              <AddToCalendar order={order} />
 
               <p className="mt-4 font-['Outfit',sans-serif] text-[11px] text-gray-500">
                 Please keep your reference and bring it with you to the event.
