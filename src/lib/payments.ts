@@ -252,15 +252,80 @@ export async function fetchCatalogue(): Promise<Catalogue> {
   return catalogue;
 }
 
-export function startCheckout(body: CheckoutRequest): Promise<CheckoutResponse> {
-  return apiFetch<CheckoutResponse>(
-    '/payments/checkout',
-    {
-      method: 'POST',
-      body: JSON.stringify(body)
-    },
-    CHECKOUT_TIMEOUT_MS
+/**
+ * Failures that are worth trying again without telling the buyer.
+ *
+ * `checkout_unavailable` is the server saying its call to the payment provider
+ * failed - which is transient far more often than not. The other two are the
+ * request never completing at all. Everything else (a rejected discount code, a
+ * validation error, an order that already has money on it) would fail exactly
+ * the same way a second time and must surface immediately.
+ */
+function worthRetrying(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  return (
+    error.code === 'checkout_unavailable' ||
+    error.code === 'network_error' ||
+    error.code === 'timeout' ||
+    error.status >= 500
   );
+}
+
+/** Waits before each further attempt. Length is the number of retries. */
+const CHECKOUT_RETRY_DELAYS_MS = [700, 1800];
+
+/**
+ * Overall ceiling across every attempt.
+ *
+ * Past this the buyer has been watching a spinner too long, and an honest error
+ * beats an indefinite wait.
+ */
+const CHECKOUT_TOTAL_BUDGET_MS = 40_000;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Start a checkout, absorbing a transient failure rather than showing it.
+ *
+ * This is the difference between a donation and a lost one. A buyer who is told
+ * "payment could not be started" does not calmly try again - they leave, and on
+ * a fundraising page that money never arrives. So a failure the server itself
+ * describes as temporary is retried here, silently, while the button still says
+ * it is taking them to payment.
+ *
+ * Retrying is safe because the idempotency key does not change between
+ * attempts: the server returns the SAME order, and the payment provider returns
+ * the same checkout link, so no buyer can be charged twice by this loop. That
+ * is also why the key must not be regenerated on retry.
+ */
+export async function startCheckout(
+  body: CheckoutRequest
+): Promise<CheckoutResponse> {
+  const deadline = Date.now() + CHECKOUT_TOTAL_BUDGET_MS;
+
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await apiFetch<CheckoutResponse>(
+        '/payments/checkout',
+        {
+          method: 'POST',
+          body: JSON.stringify(body)
+        },
+        // Never let one attempt overrun the budget the whole operation has.
+        Math.min(CHECKOUT_TIMEOUT_MS, Math.max(0, deadline - Date.now()))
+      );
+    } catch (error) {
+      if (!worthRetrying(error)) throw error;
+
+      const wait = CHECKOUT_RETRY_DELAYS_MS[attempt];
+      if (wait === undefined) throw error;
+      if (deadline - Date.now() <= wait) throw error;
+
+      await delay(wait);
+    }
+  }
 }
 
 /**
