@@ -1,6 +1,6 @@
 
 import rahulImg from '../assets/shri rahul.webp';
-import tejasImg from '../assets/shri tejas.webp';
+import tejasImg from '../assets/shri tejas.jpg';
 import milindImg from '../assets/shri millnd.webp';
 import amitImg from '../assets/shri amit.webp';
 import { SECTION } from '../config/site';
@@ -68,10 +68,14 @@ export function ArtistsSection() {
           }}>
             Delighted to Announce Our Artists
           </h2>
-          {/* Diya flame icon */}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#f2c45a" style={{ marginBottom: '14px' }}>
-            <path d="M12 2C8.5 2 6 4.5 6 8c0 2.5 1.5 4.7 3.5 5.8L8 22h8l-1.5-8.2C16.5 12.7 18 10.5 18 8c0-3.5-2.5-6-6-6z" />
-          </svg>
+          {/* Diya divider */}
+          <div className="flex items-center gap-4 mb-4 w-[340px] h-[25px]">
+            <div className="h-px flex-1 bg-[#f2c45a]/80" />
+            <svg width="15" height="23" viewBox="0 0 15 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5.16667 1V6.86714C5.16667 7.30884 4.88334 7.69533 4.48646 7.89014C3.43932 8.40639 2.5577 9.20564 1.9415 10.1973C1.3253 11.189 0.999145 12.3334 1 13.501C1.00625 17.668 4.125 20.7933 6.20833 21.835M5.16667 4.12525H3.08333C2.5308 4.12525 2.00089 4.34476 1.61019 4.73549C1.21949 5.12623 1 5.65617 1 6.20875C1 6.76133 1.21949 7.29128 1.61019 7.68201C2.00089 8.07274 2.5308 8.29225 3.08333 8.29225H3.79167M9.33333 1V6.86714C9.33333 7.30884 9.61667 7.69533 10.0125 7.89014C11.0598 8.40624 11.9417 9.20543 12.5581 10.1971C13.1745 11.1888 13.5008 12.3333 13.5 13.501C13.5 17.668 10.375 20.7933 8.29167 21.835M9.33333 4.12525H11.4167C11.9692 4.12525 12.4991 4.34476 12.8898 4.73549C13.2805 5.12623 13.5 5.65617 13.5 6.20875C13.5 6.76133 13.2805 7.29128 12.8898 7.68201C12.4991 8.07274 11.9692 8.29225 11.4167 8.29225H10.7083M13.5 21.835H1M4.125 1H10.375" stroke="#E59F2D" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <div className="h-px flex-1 bg-[#f2c45a]/80" />
+          </div>
           <p style={{
             fontFamily: 'Outfit, sans-serif',
             fontSize: '12px',
@@ -173,10 +177,10 @@ export function ArtistsSection() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontFamily: 'Outfit, sans-serif',
-                fontSize: '12px',
+                fontSize: '16px',
                 fontWeight: 700,
                 color: '#e98314',
-                lineHeight: 1.3,
+                lineHeight: 1.4,
                 textAlign: 'center',
                 paddingTop: '6px',
               }}>

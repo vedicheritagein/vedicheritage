@@ -28,8 +28,6 @@ import { PaymentReturn } from './PaymentReturn';
  */
 export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<CatalogueProduct[] | null>(null);
-  /** False until the price-list fetch has settled, one way or the other. */
-  const [catalogueSettled, setCatalogueSettled] = useState(false);
   const [activeSku, setActiveSku] = useState<string | null>(null);
   /**
    * A SKU clicked before the price list arrived.
@@ -49,52 +47,96 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     readReturnedOrderRef
   );
 
-  useEffect(() => {
-    let cancelled = false;
+  /** True while a price-list request is in flight, so clicks queue rather than stack fetches. */
+  const loading = useRef(false);
+  /** Set on unmount, so a response that arrives late cannot update state. */
+  const unmounted = useRef(false);
 
-    /**
-     * Honour a click that landed while the list was still in flight.
-     *
-     * Done here rather than in an effect watching `products`, so the only
-     * state updates happen in this callback - the click is resolved the moment
-     * the answer exists, with nothing to keep in step.
-     */
-    const resolvePendingClick = (list: CatalogueProduct[] | null) => {
-      const wanted = pendingSku.current;
-      if (!wanted) return;
-      pendingSku.current = null;
-      setWaiting(false);
-      if (list?.some((product) => product.sku === wanted)) {
-        setActiveSku(wanted);
-      } else {
-        setShowContactFallback(true);
-      }
-    };
+  /**
+   * Honour a click that landed while the list was still in flight.
+   *
+   * The click is resolved the moment an answer exists, so there is no second
+   * piece of state to keep in step with `products`.
+   */
+  const resolvePendingClick = useCallback((list: CatalogueProduct[] | null) => {
+    const wanted = pendingSku.current;
+    if (!wanted) return;
+    pendingSku.current = null;
+    setWaiting(false);
+    if (list?.some((product) => product.sku === wanted)) {
+      setActiveSku(wanted);
+    } else {
+      setShowContactFallback(true);
+    }
+  }, []);
 
-    fetchCatalogue()
-      .then((catalogue) => {
-        if (cancelled) return;
+  /**
+   * Fetch the price list. Resolves true when a usable list was stored.
+   *
+   * `settle` says what a failure means for a click that is already waiting.
+   * A retry is still to come when it is false, so the click stays queued and
+   * can still open the form; only the final attempt gives up and sends the
+   * visitor to the phone/email dialog.
+   */
+  const loadCatalogue = useCallback(
+    async (settle: boolean): Promise<boolean> => {
+      if (loading.current) return false;
+      loading.current = true;
+
+      try {
+        const catalogue = await fetchCatalogue();
+        if (unmounted.current) return false;
         // Only a non-empty list counts as loaded: `openCheckout` treats a
         // null list as "cannot open the form", so an empty catalogue routes to
         // the contact dialog rather than opening a form with nothing in it.
         const list = catalogue.products.length > 0 ? catalogue.products : null;
         setProducts(list);
-        setCatalogueSettled(true);
-        resolvePendingClick(list);
-      })
-      .catch(() => {
+        if (list || settle) resolvePendingClick(list);
+        return list !== null;
+      } catch {
         // Deliberately silent: the fallback path is a working one, and a console
         // error on a public marketing page helps nobody.
-        if (cancelled) return;
+        if (unmounted.current) return false;
         setProducts(null);
-        setCatalogueSettled(true);
-        resolvePendingClick(null);
-      });
+        if (settle) resolvePendingClick(null);
+        return false;
+      } finally {
+        loading.current = false;
+      }
+    },
+    [resolvePendingClick]
+  );
+
+  useEffect(() => {
+    unmounted.current = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    /**
+     * Retry a failed price list before the visitor ever clicks.
+     *
+     * The API runs with no warm instance, so the first request after an idle
+     * spell pays a cold start that can outlast the request timeout. That used
+     * to be terminal: the list was marked settled, every "Book now" answered
+     * with "phone us instead", and only a page reload cleared it - which is
+     * precisely the moment a fundraising page cannot afford to look broken.
+     * One retry covers the cold start, and `openCheckout` tries once more if
+     * the visitor clicks before it has succeeded.
+     */
+    const retryDelayMs = 2_000;
+
+    const attempt = async (isLast: boolean): Promise<void> => {
+      const loaded = await loadCatalogue(isLast);
+      if (loaded || isLast || unmounted.current) return;
+      timer = setTimeout(() => void attempt(true), retryDelayMs);
+    };
+
+    void attempt(false);
 
     return () => {
-      cancelled = true;
+      unmounted.current = true;
+      if (timer) clearTimeout(timer);
     };
-  }, []);
+  }, [loadCatalogue]);
 
   /**
    * Open the checkout form for a SKU, or the contact dialog if that is not
@@ -112,19 +154,23 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         setActiveSku(sku);
         return;
       }
-      // Clicked before the price list arrived. Now that a booking button sits
-      // in the navbar, above the fold and clickable immediately, this is a
-      // real race on a cold API - and answering it with "phone us instead"
-      // for a payment page that is a moment away would be absurd. The fetch
-      // opens the form as soon as it lands.
-      if (!catalogueSettled) {
-        pendingSku.current = sku;
-        setWaiting(true);
+
+      // The list loaded and this SKU is not in it. A retry cannot change that,
+      // so go straight to the phone/email dialog.
+      if (products) {
+        setShowContactFallback(true);
         return;
       }
-      setShowContactFallback(true);
+
+      // No usable list yet - the first fetch is either still in flight or it
+      // failed. Queue the click either way, and start a fresh attempt when
+      // nothing is running, so a cold API costs the visitor a spinner instead
+      // of a dead button that only a page reload fixes.
+      pendingSku.current = sku;
+      setWaiting(true);
+      if (!loading.current) void loadCatalogue(true);
     },
-    [products, catalogueSettled]
+    [products, loadCatalogue]
   );
 
   /** Give up on a queued click, so the wait is never a trap. */

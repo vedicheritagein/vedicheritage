@@ -40,9 +40,9 @@ function App() {
             <SponsorshipSection />
           </div>
 
-          <FaithCommunitySection />
+          {/* <FaithCommunitySection /> */}
 
-          <AboutHeritageSection />
+          {/* <AboutHeritageSection /> */}
 
           <SecureSeatSection />
 

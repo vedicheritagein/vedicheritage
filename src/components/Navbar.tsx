@@ -57,10 +57,10 @@ export function Navbar() {
           />
           <div className="leading-[1.2]">
             <div className="text-[15px] font-black text-[#c97d1e] tracking-[0.12em] font-['Outfit',sans-serif]">
-              VEDIC HERITAGE
+              VEDIC HERITAGE INC
             </div>
             <div className="text-[8.5px] font-bold text-gray-400 tracking-[0.28em] mt-px uppercase font-['Outfit',sans-serif]">
-              HANUMAN MANDIR
+              Sri Shiv Shakti Mandir
             </div>
           </div>
         </div>

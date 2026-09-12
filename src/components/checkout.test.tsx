@@ -657,8 +657,15 @@ describe('Booking buttons', () => {
     return { promise, resolve, reject };
   }
 
-  async function expectsTicketForm() {
-    const dialog = await screen.findByRole('dialog');
+  /**
+   * Long enough to cover the provider's retry of a failed price list.
+   * The retry is on a 2s delay, so the 1s default would report a failure the
+   * moment the first fetch rejected - before the recovery it exists to test.
+   */
+  const PAST_RETRY_MS = 6_000;
+
+  async function expectsTicketForm(timeout?: number) {
+    const dialog = await screen.findByRole('dialog', undefined, { timeout });
     expect(
       within(dialog).getByRole('heading', { name: /book your tickets/i })
     ).toBeInTheDocument();
@@ -787,9 +794,50 @@ describe('Booking buttons', () => {
 
     gate.reject();
 
-    const dialog = await screen.findByRole('dialog');
+    // The provider retries once before giving up, so the dialog appears after
+    // that second attempt fails rather than on the first rejection.
+    const dialog = await screen.findByRole('dialog', undefined, {
+      timeout: PAST_RETRY_MS
+    });
     expect(dialog).toHaveTextContent(/phone or email/i);
     expect(screen.queryByText(/loading ticket prices/i)).not.toBeInTheDocument();
+  });
+
+  it('opens on the first click when the price list only fails once', async () => {
+    // The cold-start case, and the reason the retry exists. The API has no
+    // warm instance, so the first request of an idle spell can fail while the
+    // visitor is already clicking. That used to answer "phone us instead" and
+    // stay that way until the page was reloaded - the form opened on the
+    // second visit, never the first.
+    let attempts = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/payments/products')) {
+          attempts += 1;
+          if (attempts === 1) throw new TypeError('Failed to fetch');
+          return {
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve(JSON.stringify(CATALOGUE))
+          };
+        }
+        return { ok: false, status: 404, text: () => Promise.resolve('{}') };
+      })
+    );
+
+    const user = userEvent.setup();
+    render(
+      <CheckoutProvider>
+        <Navbar />
+      </CheckoutProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: /^book now$/i }));
+
+    // No reload, no second click: the queued click is honoured by the retry.
+    await expectsTicketForm(PAST_RETRY_MS);
+    expect(screen.queryByText(/phone or email/i)).not.toBeInTheDocument();
   });
 });
 

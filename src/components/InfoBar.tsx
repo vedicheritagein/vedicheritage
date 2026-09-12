@@ -3,7 +3,7 @@ import { EVENT } from '../config/site';
 
 export function InfoBar() {
   return (
-    <div className="relative z-30 w-full" style={{ maxWidth: '1320px', margin: '-30px auto 0', padding: '0 20px' }}>
+    <div className="relative z-30 w-full" style={{ maxWidth: '1320px', margin: '-30px auto 0', padding: '0 40px' }}>
       {/* ── Figma Design Card Container ── */}
       <div
         className="bg-white flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 lg:gap-7 p-6 lg:py-9 lg:px-16"
@@ -70,10 +70,10 @@ export function InfoBar() {
             <div className="text-[#e98314] font-extrabold uppercase tracking-[0.08em] mb-0.5" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '9px' }}>
               CONTACT FOR SPONSORSHIP &amp; TICKETS
             </div>
-            <div className="text-[#1a1a1a] font-bold leading-tight" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '16px' }}>
+            <div className="text-[#1a1a1a] font-semibold leading-tight" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '16px' }}>
               Manjula: 631-805-9105
             </div>
-            <div className="text-[#777777] mt-0.5" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '11px' }}>
+            <div className="text-[#1a1a1a] font-semibold leading-tight mt-0.5" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '16px' }}>
               Deepa: 631-398-2890
             </div>
           </div>
