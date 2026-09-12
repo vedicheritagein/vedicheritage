@@ -32,7 +32,8 @@ export function CelebrateSection() {
               Join Vedic Heritage, Inc. for an inspiring evening of Indian classical music, cultural heritage, and community giving. The Annual Diwali Fundraiser brings together acclaimed artists for a memorable celebration while supporting the Brick by Brick Program and its community-focused initiatives.
             </p>
             <p className="font-['Outfit',sans-serif] text-[11.5px] text-gray-500 leading-[1.8] m-0 mb-5">
-              VHI is conducting these programs for 4 decades at the Meotigious auditorium named after Sangeet Martandya Pandit Jasraj.
+              VHI is conducting these programs for 4 decades at the 
+prestigious auditorium named after Sangeet Martandya Padma Vibhushan Pandit Jasra.
             </p>
             <p className="font-['Outfit',sans-serif] text-[11.5px] text-[#e98314] leading-[1.8] m-0">
               - Padma Vibhushan
