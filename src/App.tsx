@@ -1,8 +1,8 @@
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { InfoBar } from './components/InfoBar';
-import { AboutHeritageSection } from './components/AboutHeritageSection';
-import { FaithCommunitySection } from './components/FaithCommunitySection';
+// import { AboutHeritageSection } from './components/AboutHeritageSection';
+// import { FaithCommunitySection } from './components/FaithCommunitySection';
 import { CelebrateSection } from './components/CelebrateSection';
 import { ArtistsSection } from './components/ArtistsSection';
 import { SponsorshipSection } from './components/SponsorshipSection';
