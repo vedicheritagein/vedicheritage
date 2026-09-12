@@ -119,14 +119,33 @@ export function formatMoney(cents: number, currency = 'USD'): string {
 /** Ten seconds: long enough for a cold start, short enough not to feel stuck. */
 const REQUEST_TIMEOUT_MS = 10_000;
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+/**
+ * Longer ceiling for starting a checkout.
+ *
+ * Reading the price list is a cache lookup, but creating a checkout wakes a
+ * scaled-to-zero container, writes an order and calls Square - which the API
+ * will itself retry for up to nine seconds before giving up. Holding that to
+ * the same ten seconds meant the browser abandoned the request while the server
+ * was still working, so the buyer saw a network error for a checkout that was
+ * about to succeed, and a second click could not reuse the result.
+ *
+ * The server always answers inside this window, so what this really buys is the
+ * guarantee that the buyer sees the SERVER's outcome rather than a timeout.
+ */
+const CHECKOUT_TIMEOUT_MS = 25_000;
+
+async function apiFetch<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs: number = REQUEST_TIMEOUT_MS
+): Promise<T> {
   let response: Response;
 
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...init,
       headers: { 'Content-Type': 'application/json', ...init?.headers },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+      signal: AbortSignal.timeout(timeoutMs)
     });
   } catch (error) {
     // Offline, DNS failure, CORS rejection or timeout all land here.
@@ -234,10 +253,14 @@ export async function fetchCatalogue(): Promise<Catalogue> {
 }
 
 export function startCheckout(body: CheckoutRequest): Promise<CheckoutResponse> {
-  return apiFetch<CheckoutResponse>('/payments/checkout', {
-    method: 'POST',
-    body: JSON.stringify(body)
-  });
+  return apiFetch<CheckoutResponse>(
+    '/payments/checkout',
+    {
+      method: 'POST',
+      body: JSON.stringify(body)
+    },
+    CHECKOUT_TIMEOUT_MS
+  );
 }
 
 /**
