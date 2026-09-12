@@ -848,8 +848,9 @@ export function CheckoutModal({
           </button>
 
           <p className="mt-3 text-center font-['Outfit',sans-serif] text-[10px] leading-relaxed text-gray-500">
-            Payment is completed on Square&rsquo;s secure checkout page. Your card
-            details are never entered on, or stored by, this website.
+            Pay by Apple&nbsp;Pay, Google&nbsp;Pay or card on Square&rsquo;s secure
+            checkout page. Your card details are never entered on, or stored by,
+            this website.
           </p>
         </form>
       </div>
