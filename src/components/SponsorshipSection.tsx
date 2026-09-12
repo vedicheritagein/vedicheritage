@@ -223,7 +223,7 @@ export function SponsorshipSection() {
                 Deepa
               </div>
               <div className="font-['Outfit',sans-serif] text-[13px] font-bold text-gray-800">
-                631-398-2890
+                631-398-2800
               </div>
             </div>
           </div>

@@ -74,7 +74,7 @@ export function InfoBar() {
               Manjula: 631-805-9105
             </div>
             <div className="text-[#1a1a1a] font-semibold leading-tight mt-0.5" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '16px' }}>
-              Deepa: 631-398-2890
+              Deepa: 631-398-2800
             </div>
           </div>
         </div>
