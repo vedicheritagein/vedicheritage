@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { EVENT } from '../config/site';
 import { googleCalendarUrl } from '../lib/calendar';
 import type { OrderView } from '../lib/payments';
+import { trackCustom } from '../lib/track';
 
 const MAROON = '#4A0D12';
 const GOLD = '#e98314';
@@ -28,6 +29,20 @@ export function AddToCalendar({ order }: AddToCalendarProps) {
   const [state, setState] = useState<'asking' | 'opened' | 'declined'>('asking');
   const href = googleCalendarUrl(order);
 
+  /**
+   * Taking the calendar link is the strongest signal of intent to actually
+   * turn up that this page can observe - a good deal stronger than the purchase
+   * itself - which makes it a useful seed for a lookalike audience. Custom
+   * rather than standard because Meta has no event that means this.
+   */
+  const handleOpened = () => {
+    trackCustom('AddToCalendar', {
+      order_ref: order.orderRef,
+      content_type: order.productKind
+    });
+    setState('opened');
+  };
+
   if (state === 'declined') {
     return (
       <p className="mt-4 font-['Outfit',sans-serif] text-[11px] text-gray-500">
@@ -36,7 +51,7 @@ export function AddToCalendar({ order }: AddToCalendarProps) {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => setState('opened')}
+          onClick={handleOpened}
           className="font-semibold text-[#4A0D12] underline"
         >
           Add the event to Google Calendar
@@ -69,7 +84,7 @@ export function AddToCalendar({ order }: AddToCalendarProps) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setState('opened')}
+              onClick={handleOpened}
               className="inline-flex items-center gap-2 rounded-md px-3.5 py-2 font-['Outfit',sans-serif] text-[11px] font-bold uppercase tracking-wider text-white no-underline"
               style={{ backgroundColor: GOLD }}
             >

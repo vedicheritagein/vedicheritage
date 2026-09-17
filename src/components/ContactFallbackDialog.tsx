@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { CONTACT, SPONSORSHIP_MAILTO } from '../config/site';
+import { trackEvent } from '../lib/track';
 
 const MAROON = '#4A0D12';
 const GOLD = '#e98314';
@@ -44,6 +45,20 @@ export function ContactFallbackDialog({ open, onClose }: ContactFallbackDialogPr
       previouslyFocused.current?.focus?.();
     };
   }, [open, onClose]);
+
+  /**
+   * Report that a visitor was sent to the phone/email route.
+   *
+   * Worth its own event for two reasons. As a conversion it is a real one - the
+   * booking still happens, just by phone - so ads that produce these are not
+   * failing. As a diagnostic it is better still: this dialog only ever opens
+   * because the price list could not be loaded, so a rising count here is the
+   * earliest warning that the payments API is unwell during a campaign.
+   */
+  useEffect(() => {
+    if (!open) return;
+    trackEvent('Contact', { content_name: 'checkout-unavailable-fallback' });
+  }, [open]);
 
   if (!open) return null;
 

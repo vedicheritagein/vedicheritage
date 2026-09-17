@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CONTACT } from '../config/site';
 import { fetchOrder, formatMoney, type OrderView } from '../lib/payments';
+import { trackPurchase } from '../lib/track';
 import { AddToCalendar } from './AddToCalendar';
 
 export interface PaymentReturnProps {
@@ -68,6 +69,31 @@ export function PaymentReturn({ orderRef, onDismiss }: PaymentReturnProps) {
       if (timer !== undefined) window.clearTimeout(timer);
     };
   }, [orderRef]);
+
+  /**
+   * Report the settled payment to the Meta Pixel.
+   *
+   * Kept apart from the polling effect above so that nothing in the payment
+   * flow can be broken by analytics, and so this reads as what it is: a side
+   * effect of the order reaching `paid`.
+   *
+   * This effect re-runs on every poll that replaces `order`, and twice over
+   * under StrictMode, and the guest may well refresh the page while `?ref=` is
+   * still in the address bar. `trackPurchase` is what makes all of that safe -
+   * it keeps its own record per order reference and reports each one once.
+   */
+  useEffect(() => {
+    if (order?.status !== 'paid') return;
+
+    trackPurchase({
+      orderRef: order.orderRef,
+      value: order.totalAmountCents / 100,
+      currency: order.currency,
+      contentName: order.productLabel,
+      contentType: order.productKind,
+      quantity: order.quantity
+    });
+  }, [order]);
 
   const isPaid = order?.status === 'paid';
   const isRefunded = order?.status === 'refunded';
