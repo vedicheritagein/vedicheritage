@@ -31,7 +31,7 @@ const artists = [
   },
   {
     id: 3,
-    name: 'Shri Milind Kulkarni',
+    name: 'Shri Milind Vasudev Kulkarni',
     role: 'Harmonium',
     img: milindImg,
     intrinsic: { width: 595, height: 476 },
