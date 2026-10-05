@@ -1,7 +1,7 @@
 
 import heroBg from '../assets/hero_background.webp';
 import artistsImg from '../assets/image.png';
-import logoImg from '../assets/logo.webp';
+// import logoImg from '../assets/logo.webp';
 import { useBookTickets } from '../lib/booking';
 
 export function Hero() {
@@ -73,9 +73,9 @@ export function Hero() {
             </p>
           </div>
 
-          {/* RIGHT — Circular logo + BOOK NOW */}
-          <div className="flex flex-col items-center gap-5 pt-2 z-30 mb-20 md:mb-0 scale-75 md:scale-100 transform origin-top md:origin-top-right">
-            {/* Circular logo */}
+          {/* RIGHT — BOOK NOW */}
+          <div className="flex flex-col items-center gap-5 pt-2 md:pt-16 z-30 mb-20 md:mb-0 scale-75 md:scale-100 transform origin-top md:origin-top-right">
+            {/* Circular logo — hidden for now
             <div className="rounded-full overflow-hidden flex items-center justify-center bg-white"
               style={{
                 width: '160px',
@@ -91,6 +91,7 @@ export function Hero() {
                 className="w-full h-full object-contain"
               />
             </div>
+            */}
 
             {/* BOOK NOW pill */}
             <button
@@ -98,18 +99,18 @@ export function Hero() {
               onClick={bookTickets}
               className="bg-white border-none flex items-center justify-between cursor-pointer transition-all duration-200 hover:-translate-y-0.5 group"
               style={{
-                width: '180px',
-                height: '50px',
-                padding: '2px 2px 2px 23px',
+                width: '200px',
+                height: '56px',
+                padding: '2px 2px 2px 26px',
                 borderRadius: '63px',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
               }}>
               <span className="font-semibold text-[#0b1660] tracking-widest whitespace-nowrap leading-none"
-                style={{ fontFamily: 'Outfit, sans-serif', fontSize: '16px' }}>
+                style={{ fontFamily: 'Outfit, sans-serif', fontSize: '17px' }}>
                 BOOK NOW
               </span>
               <span className="bg-[#0b1660] rounded-full flex items-center justify-center shrink-0"
-                style={{ width: '48px', height: '48px' }}>
+                style={{ width: '52px', height: '52px' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M7 17L17 7M17 7H7M17 7v10" />
                 </svg>
