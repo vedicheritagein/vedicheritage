@@ -2,15 +2,20 @@ import { useCallback } from 'react';
 import { BOOKING, SPONSORSHIP_SKUS, TICKET_SKU } from '../config/site';
 import { useCheckout } from './checkoutContext';
 import type { CatalogueProduct } from './payments';
-import { trackEvent } from './track';
+import { contentCategory, trackCustom } from './track';
 
 /**
- * Report that a visitor started booking.
+ * Report that a visitor opened a booking form.
  *
  * Fired from the two hooks below rather than from the form itself, so it marks
  * the moment of intent - the click on a call to action - which is the point the
  * retargeting audience wants to be built from. A visitor who clicks and then
  * closes the form is exactly who that audience is for.
+ *
+ * Deliberately a custom event and NOT `InitiateCheckout`: Meta's standard
+ * event means the buyer has entered the checkout, which here is the handoff to
+ * Square in CheckoutModal's submit. Reporting both from both places would count
+ * one checkout twice and halve every conversion rate in Events Manager.
  *
  * The amount comes from the server's price list, so it cannot drift from what
  * is actually charged; when the list has not loaded the event is still sent,
@@ -18,10 +23,11 @@ import { trackEvent } from './track';
  * knowing what it was worth.
  */
 function reportCheckoutStart(sku: string, product: CatalogueProduct | undefined): void {
-  trackEvent('InitiateCheckout', {
+  trackCustom('StartBooking', {
     content_ids: [sku],
     content_type: product?.kind ?? 'product',
     content_name: product?.label ?? sku,
+    content_category: contentCategory(product?.kind),
     ...(product ? { value: product.unitAmountCents / 100, currency: 'USD' } : {})
   });
 }

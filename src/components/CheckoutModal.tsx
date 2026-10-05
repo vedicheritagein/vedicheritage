@@ -7,6 +7,7 @@ import {
   type CatalogueProduct,
   type DiscountPreview
 } from '../lib/payments';
+import { contentCategory, trackEvent } from '../lib/track';
 
 export interface CheckoutModalProps {
   /** Product the form opens on. Null closes the modal. */
@@ -423,6 +424,42 @@ export function CheckoutModal({
         discountCode: (isTicket ? appliedCode : null) ?? undefined,
         idempotencyKey: keyFor(signature)
       });
+
+      /**
+       * Meta's `InitiateCheckout`, at the only moment that genuinely is one:
+       * the order exists, it is priced, and the next statement sends the buyer
+       * to Square's hosted page. Reporting it from the "Book now" click
+       * instead - which is what the page used to do - counted everyone who
+       * opened the form and never filled it in.
+       *
+       * The amounts are the server's own, taken from the checkout response
+       * rather than recomputed here, so the event cannot report a total the
+       * buyer was never shown: a discount code the server refused, or a quote
+       * that had not finished loading, would both make a locally derived
+       * figure wrong.
+       *
+       * `orderRef` is passed as the event ID, and the Purchase for the same
+       * order carries it too, so Events Manager can tie the two together - and
+       * a Conversions API report added to the backend later will deduplicate
+       * against it rather than double-counting.
+       *
+       * Sent before the navigation, not after: `trackEvent` dispatches the
+       * request synchronously, and there is no "after" on this code path.
+       */
+      trackEvent(
+        'InitiateCheckout',
+        {
+          content_ids: [activeProduct.sku],
+          content_type: activeProduct.kind,
+          content_name: activeProduct.label,
+          content_category: contentCategory(activeProduct.kind),
+          contents: [{ id: activeProduct.sku, quantity }],
+          num_items: quantity,
+          value: result.totalAmountCents / 100,
+          currency: result.currency
+        },
+        result.orderRef
+      );
 
       // Hand off to the provider's hosted page. Kept as a full navigation
       // rather than a popup so it survives strict popup blockers.

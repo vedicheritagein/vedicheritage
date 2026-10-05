@@ -47,6 +47,18 @@ function gaName(metaName: string): string {
 }
 
 /**
+ * Meta's `content_category` for a product kind.
+ *
+ * One place rather than a literal at each call site, so the checkout start and
+ * the checkout handoff cannot disagree about what a ticket is called - Meta
+ * groups and breaks down by this string, and two spellings would split one
+ * product across two rows in every report.
+ */
+export function contentCategory(kind: string | undefined): string {
+  return kind === 'sponsorship' ? 'Sponsorship' : 'Event Ticket';
+}
+
+/**
  * Meta's `custom_data` shape to GA4's.
  *
  * `value` and `currency` mean the same thing in both, so they pass straight
@@ -57,15 +69,23 @@ function gaName(metaName: string): string {
  * shows up nowhere.
  */
 function gaParams(params: Record<string, unknown> = {}): Record<string, unknown> {
-  const { value, currency, content_ids, content_name, content_type, num_items } =
-    params as {
-      value?: number;
-      currency?: string;
-      content_ids?: string[];
-      content_name?: string;
-      content_type?: string;
-      num_items?: number;
-    };
+  const {
+    value,
+    currency,
+    content_ids,
+    content_name,
+    content_type,
+    content_category,
+    num_items
+  } = params as {
+    value?: number;
+    currency?: string;
+    content_ids?: string[];
+    content_name?: string;
+    content_type?: string;
+    content_category?: string;
+    num_items?: number;
+  };
 
   const itemId = content_ids?.[0] ?? content_type;
   const items = itemId
@@ -73,6 +93,7 @@ function gaParams(params: Record<string, unknown> = {}): Record<string, unknown>
         {
           item_id: itemId,
           item_name: content_name ?? itemId,
+          ...(content_category ? { item_category: content_category } : {}),
           ...(typeof value === 'number' ? { price: value } : {}),
           quantity: num_items ?? 1
         }
@@ -150,7 +171,9 @@ export function trackPurchase(details: PurchaseDetails): boolean {
   // next poll two seconds from now.
   rememberPurchase(details.orderRef);
 
-  pixel.trackPurchase(details);
+  const category = details.contentCategory ?? contentCategory(details.contentType);
+
+  pixel.trackPurchase({ ...details, contentCategory: category });
 
   gaEvent('purchase', {
     transaction_id: details.orderRef,
@@ -160,6 +183,7 @@ export function trackPurchase(details: PurchaseDetails): boolean {
       {
         item_id: details.contentType,
         item_name: details.contentName,
+        item_category: category,
         price: details.value / Math.max(details.quantity, 1),
         quantity: details.quantity
       }

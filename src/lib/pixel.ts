@@ -163,6 +163,12 @@ export interface PurchaseDetails {
   currency: string;
   contentName: string;
   contentType: string;
+  /**
+   * Meta's `content_category`. Supplied by lib/track.ts rather than derived
+   * here, so the Purchase and the InitiateCheckout for one order report the
+   * same string and Meta can break the two down side by side.
+   */
+  contentCategory?: string;
   quantity: number;
 }
 
@@ -191,6 +197,7 @@ export function trackPurchase(details: PurchaseDetails): boolean {
       currency: details.currency,
       content_name: details.contentName,
       content_type: details.contentType,
+      ...(details.contentCategory ? { content_category: details.contentCategory } : {}),
       contents: [{ id: details.contentType, quantity: details.quantity }],
       num_items: details.quantity
     },
