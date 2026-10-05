@@ -7,7 +7,7 @@ import {
   type CatalogueProduct,
   type DiscountPreview
 } from '../lib/payments';
-import { contentCategory, trackEvent } from '../lib/track';
+import { contentCategory, flushTracking, trackEvent } from '../lib/track';
 
 export interface CheckoutModalProps {
   /** Product the form opens on. Null closes the modal. */
@@ -443,8 +443,10 @@ export function CheckoutModal({
        * a Conversions API report added to the backend later will deduplicate
        * against it rather than double-counting.
        *
-       * Sent before the navigation, not after: `trackEvent` dispatches the
-       * request synchronously, and there is no "after" on this code path.
+       * Sent before the navigation, because there is no "after" on this code
+       * path - and then given a moment to actually leave, which is the part
+       * that was missing: dispatching the request is not the same as it
+       * arriving, and `location.assign` cancels whatever is still in flight.
        */
       trackEvent(
         'InitiateCheckout',
@@ -460,6 +462,8 @@ export function CheckoutModal({
         },
         result.orderRef
       );
+
+      await flushTracking();
 
       // Hand off to the provider's hosted page. Kept as a full navigation
       // rather than a popup so it survives strict popup blockers.

@@ -117,6 +117,34 @@ export function trackEvent(
   gaEvent(gaName(name), gaParams(params));
 }
 
+/**
+ * Give a just-reported event time to leave the browser.
+ *
+ * Both sinks report by issuing a request from the page, and a full-page
+ * navigation cancels anything still in flight. Without this the checkout
+ * handoff reported nothing at all: the request for `InitiateCheckout` was
+ * created and then killed microseconds later by the redirect to Square, which
+ * is why that one event never appeared in Events Manager while every event not
+ * followed by a navigation did.
+ *
+ * A fixed wait rather than a callback because neither `fbq` nor `gtag` offers
+ * one for this. 400ms is enough for the request to be handed to the network
+ * and short enough to disappear into the checkout call that has just returned
+ * - the button already reads "Taking you to secure payment..." by then.
+ *
+ * Only for a navigation that leaves the page. Nothing else should wait on it.
+ */
+export function flushTracking(ms = 400): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      window.setTimeout(resolve, ms);
+    } catch {
+      // A missing timer must not strand the buyer on the form.
+      resolve();
+    }
+  });
+}
+
 /** Report an event of our own naming, for things Meta has no standard name for. */
 export function trackCustom(name: string, params?: Record<string, unknown>): void {
   pixel.trackCustom(name, params);
