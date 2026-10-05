@@ -1,6 +1,6 @@
 
 import { SECTION, SPONSORSHIP_SKUS } from '../config/site';
-import { ENTRY_SPONSORSHIP_SKU } from '../lib/booking';
+import { useSponsorNow } from '../lib/booking';
 import { useCheckout } from '../lib/checkoutContext';
 import { formatMoney } from '../lib/payments';
 
@@ -81,13 +81,15 @@ const CORNERS_SWEEP_LEFT =
   'rounded-tl-[52px] rounded-tr-[6px] rounded-br-[32px] rounded-bl-[32px]';
 
 export function SponsorshipSection() {
-  const { openCheckout, getProduct } = useCheckout();
+  const { getProduct } = useCheckout();
 
-  // Tier the form opens on. The cards are a price list, not six buttons, so the
-  // one "Sponsor Now" has to start somewhere. Read from `lib/booking` rather
-  // than derived from the card order here, so this button and the one in the
-  // closing section cannot drift apart if the cards are ever reordered.
-  const defaultSponsorshipSku = ENTRY_SPONSORSHIP_SKU;
+  // The same hook every other call to action uses. It opens the form on the
+  // entry tier - the cards are a price list, not six buttons, so the one
+  // "Sponsor Now" has to start somewhere - and it reports the click. Calling
+  // `openCheckout` directly here instead, which is what this did, opened the
+  // identical form while reporting nothing at all: this was the one route into
+  // the checkout that was invisible to both Meta and GA4.
+  const sponsorNow = useSponsorNow();
 
   return (
     <section
@@ -175,7 +177,7 @@ export function SponsorshipSection() {
         <div className="text-center mb-8 mt-4">
           <button
             type="button"
-            onClick={() => openCheckout(defaultSponsorshipSku)}
+            onClick={sponsorNow}
             className="bg-[#e98314] text-white border-none rounded-full py-3.5 px-10 inline-flex items-center justify-center cursor-pointer font-['Outfit',sans-serif] text-[13px] font-bold tracking-[0.05em] shadow-[0_4px_16px_rgba(233,131,20,0.3)] transition-all hover:bg-[#d07210] hover:-translate-y-[1px]"
           >
             SPONSOR NOW

@@ -12,10 +12,16 @@ import { contentCategory, trackCustom } from './track';
  * retargeting audience wants to be built from. A visitor who clicks and then
  * closes the form is exactly who that audience is for.
  *
- * Deliberately a custom event and NOT `InitiateCheckout`: Meta's standard
- * event means the buyer has entered the checkout, which here is the handoff to
- * Square in CheckoutModal's submit. Reporting both from both places would count
- * one checkout twice and halve every conversion rate in Events Manager.
+ * A custom event, and deliberately NOT `InitiateCheckout`: Meta's standard
+ * checkout event means the buyer has entered the payment flow, which here is
+ * the handoff to Square in CheckoutModal's submit. Reporting both from both
+ * places would count one checkout twice and halve every conversion rate in
+ * Events Manager.
+ *
+ * Being custom, it sits under custom events in Events Manager rather than
+ * alongside the standard ones, and it has to be registered as a custom
+ * conversion before ad delivery can optimise or build audiences from it.
+ * That is a known trade for keeping the name the team recognises.
  *
  * The amount comes from the server's price list, so it cannot drift from what
  * is actually charged; when the list has not loaded the event is still sent,

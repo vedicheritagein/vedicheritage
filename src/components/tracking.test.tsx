@@ -54,11 +54,17 @@ function stubApi() {
   vi.stubGlobal('fetch', impl);
 }
 
-/** Every `fbq('track', ...)` call made so far, as [name, params, options]. */
+/**
+ * Every event reported so far, as [name, params, options].
+ *
+ * Both `track` and `trackCustom`, because the call to action reports a custom
+ * event and the checkout a standard one - a filter on `track` alone would
+ * quietly report "no StartBooking" however well it was working.
+ */
 function trackedEvents(): [string, Record<string, unknown>, unknown][] {
   const fbq = window.fbq as unknown as ReturnType<typeof vi.fn>;
   return fbq.mock.calls
-    .filter((call: unknown[]) => call[0] === 'track')
+    .filter((call: unknown[]) => call[0] === 'track' || call[0] === 'trackCustom')
     .map((call: unknown[]) => call.slice(1) as [string, Record<string, unknown>, unknown]);
 }
 
@@ -99,6 +105,21 @@ afterEach(() => {
   delete window.fbq;
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+});
+
+describe('Meta pixel: the call-to-action click', () => {
+  it('reports StartBooking when the form opens', async () => {
+    await openTicketForm();
+    await screen.findByRole('dialog');
+
+    const [, params] = trackedEvents().find(([name]) => name === 'StartBooking')!;
+    expect(params).toMatchObject({
+      content_ids: ['ticket-general'],
+      content_category: 'Event Ticket',
+      value: 100,
+      currency: 'USD'
+    });
+  });
 });
 
 describe('Meta pixel: InitiateCheckout', () => {
