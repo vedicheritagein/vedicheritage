@@ -56,15 +56,15 @@ describe('The Google Calendar link', () => {
     // 5pm to 9pm on the day itself. Written as local time and tagged with the
     // zone, so Google applies the daylight-saving rules rather than us baking
     // in an offset that would be an hour wrong if the date ever moved.
-    expect(param(url, 'dates')).toBe('20261024T170000/20261024T210000');
+    expect(param(url, 'dates')).toBe('20261114T170000/20261114T210000');
     expect(param(url, 'ctz')).toBe('America/New_York');
   });
 
   it('agrees with the date shown on the page', () => {
     // Both come from EVENT. This fails the moment someone edits one and not
     // the other, which is the mistake worth catching.
-    expect(EVENT.dateLabel).toBe('Saturday, Oct 24, 2026');
-    expect(param(googleCalendarUrl(ORDER), 'dates')).toContain('20261024');
+    expect(EVENT.dateLabel).toBe('Saturday, Nov 14, 2026');
+    expect(param(googleCalendarUrl(ORDER), 'dates')).toContain('20261114');
   });
 
   it('carries a findable location', () => {
@@ -101,7 +101,7 @@ describe('The Google Calendar link', () => {
   it('still builds a usable event with no order attached', () => {
     const url = googleCalendarUrl(null);
 
-    expect(param(url, 'dates')).toBe('20261024T170000/20261024T210000');
+    expect(param(url, 'dates')).toBe('20261114T170000/20261114T210000');
     expect(param(url, 'details')).not.toContain('Reference:');
   });
 });
@@ -113,7 +113,7 @@ describe('Being asked about the calendar', () => {
     expect(
       screen.getByText(/add this to your google calendar\?/i)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Saturday, Oct 24, 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Saturday, Nov 14, 2026/)).toBeInTheDocument();
   });
 
   it('opens the pre-filled link in a new tab, safely', () => {

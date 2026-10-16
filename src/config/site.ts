@@ -51,7 +51,7 @@ export const EVENT = {
   title: 'Annual Dipawali Fundraising Program',
   organisation: 'Vedic Heritage Inc.',
 
-  date: '2026-10-24',
+  date: '2026-11-14',
   startTime: '17:00',
   /**
    * Assumed, not published. The programme says "5:00 PM Sharp (Followed by
@@ -70,7 +70,7 @@ export const EVENT = {
   },
 
   /** Display copy, kept beside the machine values so the two cannot drift. */
-  dateLabel: 'Saturday, Oct 24, 2026',
+  dateLabel: 'Saturday, Nov 14, 2026',
   timeLabel: '5:00 PM Sharp (Followed by Dinner)',
 } as const;
 
@@ -135,14 +135,14 @@ const mailto = (subject: string, body?: string) =>
 export const TICKET_ENQUIRY_MAILTO = mailto(
   'Ticket booking - Annual Dipawali Fundraising Program',
   'Namaste,\n\nI would like to book tickets for the Annual Dipawali Fundraising ' +
-    'Program on Saturday, October 24, 2026.\n\nNumber of tickets:\nName:\nPhone:\n\nThank you.'
+    'Program on Saturday, November 14, 2026.\n\nNumber of tickets:\nName:\nPhone:\n\nThank you.'
 );
 
 /** Pre-filled sponsorship enquiry. */
 export const SPONSORSHIP_MAILTO = mailto(
   'Sponsorship enquiry - Annual Dipawali Fundraising Program',
   'Namaste,\n\nI am interested in sponsoring the Annual Dipawali Fundraising ' +
-    'Program on Saturday, October 24, 2026.\n\nSponsorship tier:\nName:\nPhone:\n\nThank you.'
+    'Program on Saturday, November 14, 2026.\n\nSponsorship tier:\nName:\nPhone:\n\nThank you.'
 );
 
 export const VOLUNTEER_MAILTO = mailto('Volunteering enquiry - Vedic Heritage');

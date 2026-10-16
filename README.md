@@ -61,24 +61,68 @@ editing more than one file — worth consolidating into a content module next.
 
 ## Analytics
 
-Two sinks, each switched on only by its own variable, each a no-op when that
+Three sinks, each switched on only by its own variable, each a no-op when that
 variable is empty:
 
 | Variable | Sink | Module |
 | --- | --- | --- |
 | `VITE_META_PIXEL_ID` | Meta browser pixel | `src/lib/pixel.ts` |
 | `VITE_GA_MEASUREMENT_ID` | Google Analytics 4 | `src/lib/analytics.ts` |
+| `VITE_GOOGLE_ADS_ID` | Google Ads conversions | `src/lib/ads.ts` |
 
 Components never call a sink directly. They call `src/lib/track.ts`, which fans
 out to whichever are enabled and translates Meta's event vocabulary into GA4's,
 so a component reports a conversion once and does not need an opinion about two
 schemas.
 
-Both are empty by default, including in `.env`, so a dev server, the test suite
-and any preview build report nothing. That is deliberate: testing the payment
-flow must not be able to push fake ticket sales into the live ad account or the
-live GA property. Turning tracking on is a deployment decision - set the two
-variables in the hosting environment, not in a committed file.
+All three are empty by default, so a dev server, the test suite and any preview
+build report nothing. That is deliberate: testing the payment flow must not be
+able to push fake ticket sales into the live ad account or the live GA property.
+Turning tracking on is a deployment decision - set the variables in the hosting
+environment, not in a committed file.
+
+### Google Ads
+
+GA4 and Google Ads are one library, `gtag.js`, with two IDs. `src/lib/gtag.ts`
+loads it once and configures each account on it; `analytics.ts` and `ads.ts` are
+separate sinks on top because they answer different questions - GA4 wants every
+event, Ads wants only the ones that are conversion actions in the account.
+
+A conversion is addressed as `AW-xxxxxxxxx/LABEL`: the account ID, then a label
+identifying one conversion action inside it. Each action has its own label, from
+**Google Ads > Goals > Conversions > Summary > (action) > Tag setup**.
+
+| Variable | What it is |
+| --- | --- |
+| `VITE_GOOGLE_ADS_ID` | The account, `AW-xxxxxxxxx` |
+| `VITE_GOOGLE_ADS_LEAD_LABEL` | Label for the "Website lead" action |
+| `VITE_GOOGLE_ADS_PURCHASE_LABEL` | Label for a value-based purchase action |
+
+Setting only `VITE_GOOGLE_ADS_ID` reports no conversions, but it is still worth
+setting on its own: the `config` call is what turns the `gclid` on an inbound ad
+click into the first-party `_gcl_aw` cookie. Without it, a conversion fired
+later has no click to be attributed to, and Ads records a conversion it cannot
+credit to any campaign or keyword.
+
+Either label may be left empty, and that action is then simply not reported -
+which is the right state for the purchase label until a value-based conversion
+action exists in the Ads account. Create one with Value: *"Use different values
+for each conversion"* so Smart Bidding can optimise for donation size rather
+than for lead count.
+
+**Do not paste Google's setup snippets into `index.html`.** The setup page hands
+over a `gtag/js` tag and an event snippet and says to put both in `<head>`. The
+tag would be a second copy of gtag.js racing GA4's over one `dataLayer`. The
+event snippet is worse: in `<head>` it fires on page load, which is only correct
+on a multi-page site where arriving at `/thank-you.html` *is* the conversion.
+This is a single-page app with no such URL, so it would report a lead for every
+visitor the instant they landed and the lead count would equal the traffic
+count. Add a new conversion to the `ADS_CONVERSIONS` map in `src/lib/track.ts`
+instead.
+
+Enhanced conversions are deliberately off. They mean sending Google the buyer's
+email and phone number, which needs a consent decision and a privacy-policy
+change, not just a flag.
 
 Note this project is Vite, not Next.js - only `VITE_*` names reach the browser.
 A `NEXT_PUBLIC_*` variable is silently ignored.
@@ -100,7 +144,8 @@ purchase lands in a debug view instead of your campaign numbers.
 
 ```js
 typeof window.fbq       // 'function' once the pixel is on
-typeof window.gtag      // 'function' once GA4 is on
+typeof window.gtag      // 'function' once GA4 or Google Ads is on
+document.cookie         // contains _gcl_aw after arriving with a ?gclid=
 ```
 
 If either is `undefined`, the variable is empty or the dev server was not
@@ -113,13 +158,26 @@ site - it lists every event as it fires. For the full picture use Events Manager
 > your dataset > **Test Events**, enter `http://localhost:5173`, and watch
 events arrive live. Expected sequence:
 
-| Action | Meta event | GA4 event |
-| --- | --- | --- |
-| Page load | `PageView` | `page_view` |
-| Any "Book now" / "Sponsor now" click | `InitiateCheckout` | `begin_checkout` |
-| Returning from a successful payment | `Purchase` | `purchase` |
-| "Add to calendar" after paying | `AddToCalendar` | `add_to_calendar` |
-| The phone/email fallback dialog opening | `Contact` | `generate_lead` |
+| Action | Meta event | GA4 event | Google Ads |
+| --- | --- | --- | --- |
+| Page load | `PageView` | `page_view` | - |
+| Any "Book now" / "Sponsor now" click | `StartBooking` | `start_booking` | - |
+| Reaching Square's payment page | `InitiateCheckout` | `begin_checkout` | - |
+| Returning from a successful payment | `Purchase` | `purchase` | purchase label |
+| "Add to calendar" after paying | `AddToCalendar` | `add_to_calendar` | - |
+| The phone/email fallback dialog opening | `Contact` | `generate_lead` | lead label |
+
+Only the last two reach Google Ads, on purpose: a conversion action is something
+the account bids towards, and reporting a form-opener as one teaches Smart
+Bidding to buy form-openers instead of donors.
+
+**Google Ads.** The conversion action's row in Ads > Goals > Conversions shows
+"Recording conversions" once one has arrived, but it lags by up to three hours,
+so use Google's **Tag Assistant** (tagassistant.google.com) against
+`http://localhost:5173` for anything live. It lists each `conversion` event with
+its `send_to`, which is the one thing worth checking: a typo in the label sends
+the conversion to an action that does not exist and Ads reports nothing with no
+error anywhere.
 
 **GA4.** Open Admin > **DebugView** in the GA4 property. It only shows traffic
 flagged as debug, so install the *Google Analytics Debugger* extension first.
@@ -131,12 +189,13 @@ including that nothing fires when they are empty and that a purchase is reported
 once however many times the payment return dialog polls:
 
 ```bash
-npx vitest run src/lib/pixel.test.ts src/lib/analytics.test.ts src/lib/track.test.ts
+npx vitest run src/lib/pixel.test.ts src/lib/analytics.test.ts   src/lib/ads.test.ts src/lib/track.test.ts
 ```
 
-**Before going back to normal work,** empty both variables in `.env` again.
-Leaving a live pixel ID in a dev environment is how test bookings end up in the
-campaign's cost-per-purchase.
+**Before going back to normal work,** empty the variables in `.env` again.
+Leaving a live pixel or Ads ID in a dev environment is how test bookings end up
+in the campaign's cost-per-purchase - and with Ads it is worse than a wrong
+number in a report, because Smart Bidding spends real money acting on it.
 
 ## Images
 

@@ -1,11 +1,17 @@
 /**
  * The one place the page reports anything.
  *
- * Two sinks sit behind this: the Meta pixel (lib/pixel.ts) and Google
- * Analytics 4 (lib/analytics.ts). Each is independently switched on by its own
- * environment variable and each is separately a no-op when unset, so a build
- * can run either, both or neither - neither being what dev, test and preview
- * builds do.
+ * Three sinks sit behind this: the Meta pixel (lib/pixel.ts), Google Analytics
+ * 4 (lib/analytics.ts) and Google Ads conversions (lib/ads.ts). Each is
+ * independently switched on by its own environment variable and each is
+ * separately a no-op when unset, so a build can run any combination of them -
+ * none at all being what dev, test and preview builds do.
+ *
+ * GA4 and Google Ads are separate sinks despite sharing gtag.js, because they
+ * answer different questions: GA4 wants every event, Ads wants only the ones
+ * that are conversion actions in the account, addressed by label. Collapsing
+ * them would mean either reporting conversions Ads has no action for, or
+ * losing the GA4 events that are not conversions.
  *
  * Call sites use Meta's event vocabulary, because that is what the site was
  * already instrumented with and because Meta's names are the stricter set. The
@@ -18,6 +24,7 @@
  * same order collapse into one conversion rather than counting twice.
  */
 
+import * as ads from './ads';
 import { gaEvent } from './analytics';
 import * as pixel from './pixel';
 import type { PurchaseDetails } from './pixel';
@@ -44,6 +51,39 @@ function gaName(metaName: string): string {
     GA_EVENT_NAMES[metaName] ??
     metaName.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase()
   );
+}
+
+/**
+ * Which Meta events are also Google Ads conversion actions.
+ *
+ * Deliberately a short list, and deliberately not every event. A conversion
+ * action is something the account bids towards, so adding one here without a
+ * matching action and label in Google Ads reports nothing, and adding a
+ * mid-funnel event that Ads *does* have an action for teaches Smart Bidding to
+ * buy form-openers instead of donors.
+ *
+ * `Purchase` is absent on purpose: it carries a value and an order reference,
+ * so it goes through `trackPurchase` below rather than the generic path.
+ */
+const ADS_CONVERSIONS: Record<string, (params: Record<string, unknown>) => boolean> = {
+  Contact: (params) => ads.adsLead(params)
+};
+
+/**
+ * Meta's `custom_data` to the handful of fields Google Ads reads.
+ *
+ * Ads has no content vocabulary at all - an event carries a value, a currency
+ * and a transaction ID, and everything else is ignored. Passing the Meta
+ * payload through unfiltered would not break anything, but it would suggest
+ * those fields arrive somewhere, and they do not.
+ */
+function adsParams(params: Record<string, unknown> = {}): Record<string, unknown> {
+  const { value, currency } = params as { value?: number; currency?: string };
+
+  return {
+    ...(typeof value === 'number' ? { value } : {}),
+    ...(currency ? { currency } : {})
+  };
 }
 
 /**
@@ -115,12 +155,13 @@ export function trackEvent(
 ): void {
   pixel.trackEvent(name, params, eventId);
   gaEvent(gaName(name), gaParams(params));
+  ADS_CONVERSIONS[name]?.(adsParams(params));
 }
 
 /**
  * Give a just-reported event time to leave the browser.
  *
- * Both sinks report by issuing a request from the page, and a full-page
+ * Every sink reports by issuing a request from the page, and a full-page
  * navigation cancels anything still in flight. Without this the checkout
  * handoff reported nothing at all: the request for `InitiateCheckout` was
  * created and then killed microseconds later by the redirect to Square, which
@@ -216,6 +257,12 @@ export function trackPurchase(details: PurchaseDetails): boolean {
         quantity: details.quantity
       }
     ]
+  });
+
+  ads.adsPurchase({
+    orderRef: details.orderRef,
+    value: details.value,
+    currency: details.currency
   });
 
   return true;
